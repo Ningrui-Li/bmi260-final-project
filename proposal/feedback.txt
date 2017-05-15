@@ -1,0 +1,14 @@
+Darvin’s Comments:
+Your project is incredibly well defined.
+You have a clear goal and clear approaches that follow the structure of this class well, so no real comments there.
+Do be careful about the data.  I don’t know the PROSTATEx Challenge from SPIE, but make sure you have enough ground truth labels if you want to stage prostate cancer.  Make sure you have enough negative samples if you want to detect cancer.
+Albee’s Comments:
+Very clearly defined project!
+I am sure we will read more about the methods but I am curious as to 1) how will features be evaluated for their predictive ability of prostate cancer 2) what ML algorithms are you thinking 3) how are you classifying cancer severity? Do you know what features to use? Do you have gold standard labels?
+Daniel’s comments:
+What segmentation methods will you try?
+What classification approach(es) will you look at?
+David’s Comments:
+If you’re using T2w, DCE and DWI together, will you use registration?  This will be covered in an upcoming lecture.  It can be a fairly challenging topic in and of itself.  If the dataset comes with pre-registered images, that will be an asset.
+Consider variability in the MR image values across patients carefully.  It be difficult to compare if they aren’t using the exact same MR pulse sequence on the exact same manufacturer’s scanner
+Are you going to compute kinetics from the DCE data?  This is a pretty big topic in and of itself.  If not, you should consider carefully what the meaning of that DCE data is since it will depend on things like the bolus injection timing and the physiological differences between subjects (not having to do with prostate).
