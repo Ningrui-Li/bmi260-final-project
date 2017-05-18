@@ -49,13 +49,28 @@ def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
         for line in csv_reader:
             if not line:
                 continue
-            print(line)
-            patient_name = line[0]
-            patient_mri_dir = get_mri_dir()
-            seq_name = line[1]
-            study_date = line[2]
-            finding_id = line[3]
 
+            patient_name = line[0]
+            patient_mri_dir = get_mri_dir(mri_dir, patient_name)
+            seq_name = line[1] # Name of MR pulse sequence.
+            seq_id = line[-1] # DICOM ID of image series.
+            #acquisition_date = line[2] # Date of scan.
+            fid = int(line[3]) # Finding ID.
+            idx = [int(i) for i in line[6].split(' ')] # Indices of findings.
+            spacing = [float(i) for i in line[8].split(',')] # Voxel Spacing
+            dim = [int(i) for i in line[9].split('x')]
+            dim = dim[:-1]
+
+            
+            # Get filepath to images acquired for a given pulse sequence.
+            if seq_name not in patients[patient_name][fid]:
+                patients[patient_name][fid][seq_name] = dict()
+
+            patients[patient_name][fid][seq_name]['filepath'] = join(
+                patient_mri_dir, seq_id)
+            patients[patient_name][fid][seq_name]['world_matrix'] = line[5]
+            patients[patient_name][fid][seq_name]['finding_idx'] = idx
+            patients[patient_name][fid][seq_name]['vox_spacing'] = spacing
 
     return patients
 
@@ -98,14 +113,16 @@ def main():
     images_filename = 'ProstateX-2-Images-Train.csv'
 
     #print(listdir(get_mri_dir(mri_dir, 'ProstateX-0014')))
-    print(listdir(get_dce_dir(dce_dir, 'ProstateX-0014')))
-
-    return
+    #print(listdir(get_dce_dir(dce_dir, 'ProstateX-0014')))
+    #return
 
     patients = read_patient_labels(findings_filename, images_filename,
         mri_dir, dce_dir)
-
-    print(patients['ProstateX-0002'])
+    return
+    #print(patients['ProstateX-0002'])
+    for patient in patients:
+        for pulse_seq in patients[patient]['img']:
+            print(patient, pulse_seq)
 
 if __name__ == '__main__':
     main()
