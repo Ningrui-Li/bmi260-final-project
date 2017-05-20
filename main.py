@@ -3,8 +3,8 @@ from os import listdir
 from os.path import join
 
 import matplotlib.pyplot as plt
-import dicom as dcm
-
+import dicom
+import numpy as np
 
 def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
     '''
@@ -111,6 +111,49 @@ def get_dce_dir(dce_dir, patient_name):
     return join(dce_dir, patient_name)
 
 
+def read_mri_volume(patient_mri_dir):
+    '''
+    Reads in a series of DCM images into a 3D numpy.ndarray. The DCM images are
+    not in the correct axial ordering, so this function also sorts them.
+    INPUTS:
+    patient_mri_dir (string) - path of folder with patient's DCM images.
+    OUTPUT:
+    img_vol - 3D numpy array of CT scan. First dimension is coronal, second
+        dimension is sagittal, third dimension is axial.
+    '''
+    dcm_names = listdir(patient_mri_dir)
+    num_images = len(dcm_names)
+
+    # Read in first image to get image size info.
+    dcm = dicom.read_file(join(patient_mri_dir, dcm_names[0]))
+
+    # Initialize image volume.
+    img_vol = np.zeros((dcm.Rows, dcm.Columns, num_images)).astype('int16')
+    axial_pos = [0]*num_images;
+
+    # Read all image slices into the volume.
+    for dcm_name in dcm_names:
+        dcm = dicom.read_file(join(patient_mri_dir, dcm_name))
+
+        # Convert image pixel values to Hounsfield units.
+        slice_index = dcm.InstanceNumber-1
+
+        # Store image axial location
+        axial_pos[slice_index] = dcm.SliceLocation
+
+        # Store image into volume
+        img_vol[:,:,slice_index] = dcm.pixel_array
+
+
+    # Print resolution.
+    axial_diff = [axial_pos[n]-axial_pos[n-1] for n in range(1, len(axial_pos))]
+    axial_res = np.abs(np.mean(axial_diff))
+    print('The transverse resolution is {} mm.'.format(dcm.PixelSpacing))
+    print('The axial resolution is {} mm.'.format(axial_res))
+
+    return img_vol
+
+
 def main():
     mri_dir = 'DOI'
     dce_dir = 'KtransTrain'
@@ -128,9 +171,22 @@ def main():
     for patient in patients:
         for fid in patients[patient]:
             #print(patient, patients[patient][fid])
-            print(patients[patient][fid]['dce'])
-            return
+            #print(patients[patient][fid]['dce'])
 
+            for pulse_seq in patients[patient][fid]:
+                if 't2_tse_tra0' in pulse_seq:
+                    print('Finding at',
+                        patients[patient][fid][pulse_seq]['finding_idx'])
+                    img_vol = read_mri_volume(
+                        patients[patient][fid][pulse_seq]['filepath'])
+                    print(img_vol.shape)
+
+                    plt.figure()
+                    plt.imshow(img_vol[:,:, 8], cmap='gray')
+                    plt.show()
+                    return
+
+            return
 
 if __name__ == '__main__':
     main()
