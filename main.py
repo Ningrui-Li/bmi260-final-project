@@ -3,6 +3,7 @@ from os import listdir
 from os.path import join
 
 import matplotlib.pyplot as plt
+import dicom as dcm
 
 
 def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
@@ -61,7 +62,7 @@ def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
             dim = [int(i) for i in line[9].split('x')]
             dim = dim[:-1]
 
-            
+
             # Get filepath to images acquired for a given pulse sequence.
             if seq_name not in patients[patient_name][fid]:
                 patients[patient_name][fid][seq_name] = dict()
@@ -71,6 +72,11 @@ def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
             patients[patient_name][fid][seq_name]['world_matrix'] = line[5]
             patients[patient_name][fid][seq_name]['finding_idx'] = idx
             patients[patient_name][fid][seq_name]['vox_spacing'] = spacing
+
+            # Get filepath to Ktrans map.
+            patients[patient_name][fid]['dce'] = dict()
+            patients[patient_name][fid]['dce']['filepath'] = join(
+                get_dce_dir(dce_dir, patient_name))
 
     return patients
 
@@ -105,7 +111,6 @@ def get_dce_dir(dce_dir, patient_name):
     return join(dce_dir, patient_name)
 
 
-
 def main():
     mri_dir = 'DOI'
     dce_dir = 'KtransTrain'
@@ -118,11 +123,14 @@ def main():
 
     patients = read_patient_labels(findings_filename, images_filename,
         mri_dir, dce_dir)
-    return
-    #print(patients['ProstateX-0002'])
+
+
     for patient in patients:
-        for pulse_seq in patients[patient]['img']:
-            print(patient, pulse_seq)
+        for fid in patients[patient]:
+            #print(patient, patients[patient][fid])
+            print(patients[patient][fid]['dce'])
+            return
+
 
 if __name__ == '__main__':
     main()
