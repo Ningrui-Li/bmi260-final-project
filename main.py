@@ -154,6 +154,15 @@ def read_mri_volume(patient_mri_dir):
     return img_vol
 
 
+def compute_patient_statistics(patients):
+    finding_grades = [0, 0, 0, 0, 0]
+    for _, patient in patients.items():
+        for fid in patient:
+            finding_grades[patient[fid]['score']-1] += 1
+    print(finding_grades)
+    return
+
+
 def main():
     mri_dir = 'DOI'
     dce_dir = 'KtransTrain'
@@ -166,27 +175,33 @@ def main():
 
     patients = read_patient_labels(findings_filename, images_filename,
         mri_dir, dce_dir)
+    compute_patient_statistics(patients)
 
 
-    for patient in patients:
-        for fid in patients[patient]:
-            #print(patient, patients[patient][fid])
+    for _, patient in patients.items():
+        for _, fid in patient.items():
+            # fid is short for finding ID.
+            #print(patient, fid, patients[patient][fid])
             #print(patients[patient][fid]['dce'])
 
-            for pulse_seq in patients[patient][fid]:
-                if 't2_tse_tra0' in pulse_seq:
-                    print('Finding at',
-                        patients[patient][fid][pulse_seq]['finding_idx'])
-                    img_vol = read_mri_volume(
-                        patients[patient][fid][pulse_seq]['filepath'])
+            for fid_info in fid:
+                # Process DCE images.
+                if fid_info == 'dce':
+                    print(fid[fid_info])
+
+                # Process transverse T2-weighted images.
+                elif 't2_tse_tra0' in fid_info:
+                    idx = fid[fid_info]['finding_idx']
+                    print('Finding at', idx)
+                    img_vol = read_mri_volume(fid[fid_info]['filepath'])
                     print(img_vol.shape)
 
-                    plt.figure()
-                    plt.imshow(img_vol[:,:, 8], cmap='gray')
-                    plt.show()
-                    return
-
+                    fig, ax = plt.subplots()
+                    ax.imshow(img_vol[idx[1]-40:idx[1]+40,
+                        idx[0]-40:idx[0]+40, idx[2]], cmap='gray')
+                    #plt.show()
             return
+
 
 if __name__ == '__main__':
     main()
