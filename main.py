@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import dicom
 import numpy as np
 
-from extract_features import extract_metadata_features
+from extract_features import extract_metadata_features, extract_dce_features
 
 def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
     '''
@@ -182,17 +182,25 @@ def main():
 
     for _, patient in patients.items():
         for _, fid in patient.items():
+            # Convert finding position from string to coordinates.
+            finding_pos = fid['pos'].split()
+            finding_pos = [float(x) for x in finding_pos]
+
             # fid is short for finding ID.
             #print(patient, fid, patients[patient][fid])
             #print(patients[patient][fid]['dce'])
 
-            features = []
+            if int(fid['score']) != 3:
+                continue
+            metadata_features = []
             for fid_info in fid:
+                #print(fid_info)
                 # Process DCE images.
                 if fid_info == 'dce':
-                    continue
-                    print(fid[fid_info])
-
+                    #print(fid)
+                    dce_features = extract_dce_features(
+                        fid[fid_info]['filepath'], finding_pos)
+                    return
                 # Process transverse T2-weighted images and
                 # extract metadata features.
                 elif 't2_tse_tra0' in fid_info:
@@ -208,11 +216,41 @@ def main():
 
 
                     # Extract metadata features.
-                    features.extend(extract_metadata_features(
-                        fid[fid_info]['filepath']))
+                    if len(metadata_features) == 0:
+                        metadata_features.extend(extract_metadata_features(
+                            fid[fid_info]['filepath']))
 
-            fid['features'] = features
-            print(features)
+                # Process sagittal T2-weighted images and
+                # extract metadata features.
+                elif 't2_tse_sag0' in fid_info:
+                    idx = fid[fid_info]['finding_idx']
+
+                    # Extract metadata features.
+                    if len(metadata_features) == 0:
+                        metadata_features.extend(extract_metadata_features(
+                            fid[fid_info]['filepath']))
+
+
+                elif 'ep2d_diff_tra_DYNDIST_ADC0' in fid_info:
+                    idx = fid[fid_info]['finding_idx']
+
+                    # Extract metadata features.
+                    if len(metadata_features) == 0:
+                        metadata_features.extend(extract_metadata_features(
+                            fid[fid_info]['filepath']))
+
+
+                elif 'ep2d_diff_tra_DYNDISTCALC_BVAL0' in fid_info:
+                    idx = fid[fid_info]['finding_idx']
+
+                    # Extract metadata features.
+                    if len(metadata_features) == 0:
+                        metadata_features.extend(extract_metadata_features(
+                            fid[fid_info]['filepath']))
+
+            fid['features'] = metadata_features
+
+            print(fid['patient_name'], fid['id'], fid['features'])
 
 
 
