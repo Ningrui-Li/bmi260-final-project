@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import dicom
 import numpy as np
 
+from extract_features import extract_metadata_features
+
 def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
     '''
     INPUT:
@@ -127,7 +129,7 @@ def read_mri_volume(patient_mri_dir):
     # Read in first image to get image size info.
     dcm = dicom.read_file(join(patient_mri_dir, dcm_names[0]))
 
-    # Initialize image volume.
+    # Allocate memory for image volume.
     img_vol = np.zeros((dcm.Rows, dcm.Columns, num_images)).astype('int16')
     axial_pos = [0]*num_images;
 
@@ -141,15 +143,15 @@ def read_mri_volume(patient_mri_dir):
         # Store image axial location
         axial_pos[slice_index] = dcm.SliceLocation
 
-        # Store image into volume
+        # Store image into volume.
         img_vol[:,:,slice_index] = dcm.pixel_array
 
 
     # Print resolution.
     axial_diff = [axial_pos[n]-axial_pos[n-1] for n in range(1, len(axial_pos))]
     axial_res = np.abs(np.mean(axial_diff))
-    print('The transverse resolution is {} mm.'.format(dcm.PixelSpacing))
-    print('The axial resolution is {} mm.'.format(axial_res))
+    #print('The transverse resolution is {} mm.'.format(dcm.PixelSpacing))
+    #print('The axial resolution is {} mm.'.format(axial_res))
 
     return img_vol
 
@@ -159,7 +161,7 @@ def compute_patient_statistics(patients):
     for _, patient in patients.items():
         for fid in patient:
             finding_grades[patient[fid]['score']-1] += 1
-    print(finding_grades)
+    #print(finding_grades)
     return
 
 
@@ -184,23 +186,34 @@ def main():
             #print(patient, fid, patients[patient][fid])
             #print(patients[patient][fid]['dce'])
 
+            features = []
             for fid_info in fid:
                 # Process DCE images.
                 if fid_info == 'dce':
+                    continue
                     print(fid[fid_info])
 
-                # Process transverse T2-weighted images.
+                # Process transverse T2-weighted images and
+                # extract metadata features.
                 elif 't2_tse_tra0' in fid_info:
                     idx = fid[fid_info]['finding_idx']
-                    print('Finding at', idx)
-                    img_vol = read_mri_volume(fid[fid_info]['filepath'])
-                    print(img_vol.shape)
+                    #print('Finding at', idx)
+                    #img_vol = read_mri_volume(fid[fid_info]['filepath'])
+                    #print(img_vol.shape)
 
-                    fig, ax = plt.subplots()
-                    ax.imshow(img_vol[idx[1]-40:idx[1]+40,
-                        idx[0]-40:idx[0]+40, idx[2]], cmap='gray')
+                    #fig, ax = plt.subplots()
+                    #ax.imshow(img_vol[idx[1]-40:idx[1]+40,
+                    #    idx[0]-40:idx[0]+40, idx[2]], cmap='gray')
                     #plt.show()
-            return
+
+
+                    # Extract metadata features.
+                    features.extend(extract_metadata_features(
+                        fid[fid_info]['filepath']))
+
+            fid['features'] = features
+            print(features)
+
 
 
 if __name__ == '__main__':
