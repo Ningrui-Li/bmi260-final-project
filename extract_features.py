@@ -15,9 +15,6 @@ def extract_metadata_features(patient_mri_dir):
     dcm = dicom.read_file(join(patient_mri_dir, dcm_names[0]))
 
     # Add patient's age, size, and weight.
-    features = [dcm.PatientAge[:-1], dcm.PatientSize, dcm.PatientWeight]
-
-    # Cast everything to a float.
-    features = [float(feature) for feature in features]
+    features = [int(dcm.PatientAge[:-1]), int(dcm.PatientWeight)]
 
     return features
