@@ -10,6 +10,7 @@ import SimpleITK as sitk
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+from helper import *
 
 def extract_metadata_features(mri_dir):
     '''
@@ -90,18 +91,29 @@ def extract_zone_features(zone):
         return [0, 0, 1]
 
 
-
 def extract_t2_features(mri_dir, finding_idx):
     '''
-    Extract features from the provided DCE image volume given the finding's
+    Extract features from the provided T2 image volume given the finding's
     approximate location (in image indices).
     '''
+    img_vol = read_mri_volume(mri_dir)
+    roi = img_vol[finding_idx[1]-2:finding_idx[1]+3,
+        finding_idx[0]-2:finding_idx[0]+3,
+        finding_idx[2]-1:finding_idx[2]+2]
+
     #print('Finding at', idx)
-    #img_vol = read_mri_volume(fid[fid_info]['filepath'])
+    #
     #print(img_vol.shape)
 
     #fig, ax = plt.subplots()
     #ax.imshow(img_vol[idx[1]-40:idx[1]+40,
     #    idx[0]-40:idx[0]+40, idx[2]], cmap='gray')
     #plt.show()
-    return
+
+    # Histogram-based features.
+    #t2_features = [np.max(roi), np.mean(roi), np.std(roi)]
+
+    # Or just use the entire ROI as a feature!
+    t2_features = list(roi.flatten())
+
+    return t2_features
