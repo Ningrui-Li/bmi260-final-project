@@ -71,6 +71,40 @@ def extract_dce_features(dce_dir, finding_pos):
     plt.show()
     '''
 
+    # Histogram-based features.
     dce_features = [np.max(roi), np.mean(roi), np.std(roi)]
 
+    # Or just use the entire ROI as a feature!
+    #dce_features = list(roi.flatten())
+
     return dce_features
+
+
+def extract_zone_features(zone):
+    '''
+    Perform one-hot encoding of the zone where the finding is located. Allows
+    the zone to be used as a feature even though it's a categorical variable.
+    '''
+    if zone == 'PZ':
+        return [1, 0, 0]
+    elif zone == 'AS':
+        return [0, 1, 0]
+    else:
+        return [0, 0, 1]
+
+
+
+def extract_t2_features(mri_dir, finding_pos):
+    '''
+    Extract features from the provided DCE image volume given the finding's
+    approximate location (in image coordinates).
+    '''
+    #print('Finding at', idx)
+    #img_vol = read_mri_volume(fid[fid_info]['filepath'])
+    #print(img_vol.shape)
+
+    #fig, ax = plt.subplots()
+    #ax.imshow(img_vol[idx[1]-40:idx[1]+40,
+    #    idx[0]-40:idx[0]+40, idx[2]], cmap='gray')
+    #plt.show()
+    return

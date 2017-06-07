@@ -10,7 +10,7 @@ from sklearn import preprocessing, metrics, svm
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.feature_selection import SelectKBest, f_classif
 
-from extract_features import extract_metadata_features, extract_dce_features
+from extract_features import *
 
 def read_finding_labels(findings_filename, images_filename, mri_dir, dce_dir):
     '''
@@ -194,7 +194,7 @@ def main():
             fid['score'] = 0
         else:
             fid['score'] = 1
-        
+
 
         # Convert finding position from string to coordinates.
         finding_pos = fid['pos'].split()
@@ -208,23 +208,19 @@ def main():
             if fid_info == 'dce':
                 dce_features = extract_dce_features(
                     fid[fid_info]['filepath'], finding_pos)
-            # Process transverse T2-weighted images and
-            # extract metadata features.
+
+
+            # Process transverse T2-weighted images.
             elif 't2_tse_tra0' in fid_info:
                 idx = fid[fid_info]['finding_idx']
-                #print('Finding at', idx)
-                #img_vol = read_mri_volume(fid[fid_info]['filepath'])
-                #print(img_vol.shape)
-
-                #fig, ax = plt.subplots()
-                #ax.imshow(img_vol[idx[1]-40:idx[1]+40,
-                #    idx[0]-40:idx[0]+40, idx[2]], cmap='gray')
-                #plt.show()
+                t2_features = extract_t2_features(
+                    fid[fid_info]['filepath'], finding_pos)
 
                 # Extract metadata features.
                 if len(metadata_features) == 0:
                     metadata_features.extend(extract_metadata_features(
                         fid[fid_info]['filepath']))
+
 
             # Process sagittal T2-weighted images and
             # extract metadata features.
@@ -254,7 +250,10 @@ def main():
                     metadata_features.extend(extract_metadata_features(
                         fid[fid_info]['filepath']))
 
-        fid['features'] = metadata_features + dce_features
+        # Extract zone location as a feature.
+        zone_features = extract_zone_features(fid['zone'])
+
+        fid['features'] = metadata_features + dce_features + zone_features
         num_features = len(fid['features'])
         #print(fid['patient_name'], fid['id'], fid['features'])
 
@@ -309,6 +308,24 @@ def main():
     print('Sensitivity = {:.2f}%'.format(100*true_positives/positives))
     print('Specificity = {:.2f}%'.format(100*true_negatives/negatives))
 
+    # Create ROC curve.
+    y_prob_predicted = svc.predict_proba(X_test)
+    fpr, tpr, thresholds = metrics.roc_curve(y_test, y_prob_predicted[:,1],
+        pos_label=1, drop_intermediate=False)
+
+    fig, ax = plt.subplots()
+    ax.plot(fpr, tpr, 'k-')
+    ax.plot([0, 1], [0, 1], 'k--')
+    ax.set_title('ROC Curve for Classification with Semantic and Image'
+        'Features\nSVC with RBF Kernel, C = 500, $\gamma$ = 0.0001')
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    fig.savefig('roc_curve.png')
+
+    auroc = metrics.roc_auc_score(y_test, y_prob_predicted[:,1])
+    print('The area under the ROC curve is {:.3f}'.format(auroc))
 
 
 if __name__ == '__main__':
