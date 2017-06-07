@@ -165,10 +165,10 @@ def read_mri_volume(patient_mri_dir):
 def optimize_svc_params(X_train, y_train, param_grid):
     '''
     Optimizes hyperparameters for SVC model based on provided training data
-    using 10-fold cross validation.
+    using 5-fold cross validation.
     Only looks at the parameters given in 'param_grid'.
     '''
-    clf = GridSearchCV(svm.SVC(class_weight='balanced'), param_grid, cv=10)
+    clf = GridSearchCV(svm.SVC(class_weight='balanced'), param_grid, cv=5)
     clf.fit(X_train, y_train)
     print("Optimal params:")
     print(clf.best_params_)
