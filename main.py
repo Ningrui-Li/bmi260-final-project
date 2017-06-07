@@ -8,7 +8,7 @@ import numpy as np
 
 from extract_features import extract_metadata_features, extract_dce_features
 
-def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
+def read_finding_labels(findings_filename, images_filename, mri_dir, dce_dir):
     '''
     INPUT:
     findings_filename - name of CSV file with labels for each finding.
@@ -21,7 +21,7 @@ def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
                containing information about each patient (like their name,
                label, filepaths to MR images, etc.)
     '''
-    patients = dict()
+    findings = dict()
 
     with open(findings_filename) as finding_labels:
         next(finding_labels) # Skip first line (because it's a header).
@@ -41,9 +41,13 @@ def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
             finding['zone'] = line[3]
             finding['score'] = int(line[4])
 
-            if finding['patient_name'] not in patients:
-                patients[finding['patient_name']] = dict()
-            patients[finding['patient_name']][finding['id']] = finding
+            # Set finding name to be the patient name followed by the
+            # finding number.
+            finding_name = '{}-{}'.format(finding['patient_name'],
+                finding['id'])
+
+
+            findings[finding_name] = finding
 
     with open(images_filename) as images_labels:
         csv_reader = csv.reader(images_labels, delimiter=',', quotechar='"')
@@ -64,23 +68,26 @@ def read_patient_labels(findings_filename, images_filename, mri_dir, dce_dir):
             dim = [int(i) for i in line[9].split('x')]
             dim = dim[:-1]
 
+            finding_name = '{}-{}'.format(patient_name, fid)
 
             # Get filepath to images acquired for a given pulse sequence.
-            if seq_name not in patients[patient_name][fid]:
-                patients[patient_name][fid][seq_name] = dict()
+            if seq_name not in findings[finding_name]:
+                findings[finding_name][seq_name] = dict()
 
-            patients[patient_name][fid][seq_name]['filepath'] = join(
+            findings[finding_name][seq_name]['filepath'] = join(
                 patient_mri_dir, seq_id)
-            patients[patient_name][fid][seq_name]['world_matrix'] = line[5]
-            patients[patient_name][fid][seq_name]['finding_idx'] = idx
-            patients[patient_name][fid][seq_name]['vox_spacing'] = spacing
+            findings[finding_name][seq_name]['world_matrix'] = line[5]
+            findings[finding_name][seq_name]['finding_idx'] = idx
+            findings[finding_name][seq_name]['vox_spacing'] = spacing
 
             # Get filepath to Ktrans map.
-            patients[patient_name][fid]['dce'] = dict()
-            patients[patient_name][fid]['dce']['filepath'] = join(
+            findings[finding_name]['dce'] = dict()
+            findings[finding_name]['dce']['filepath'] = join(
                 get_dce_dir(dce_dir, patient_name))
 
-    return patients
+            print(findings[finding_name])
+
+    return findings
 
 
 def get_mri_dir(mri_dir, patient_name):
@@ -156,11 +163,11 @@ def read_mri_volume(patient_mri_dir):
     return img_vol
 
 
-def compute_patient_statistics(patients):
+def compute_finding_statistics(findings):
     finding_grades = [0, 0, 0, 0, 0]
-    for _, patient in patients.items():
-        for fid in patient:
-            finding_grades[patient[fid]['score']-1] += 1
+    print(findings)
+    for _, finding in findings.items():
+        finding_grades[int(finding['score'])-1] += 1
     #print(finding_grades)
     return
 
@@ -175,82 +182,78 @@ def main():
     #print(listdir(get_dce_dir(dce_dir, 'ProstateX-0014')))
     #return
 
-    patients = read_patient_labels(findings_filename, images_filename,
+    findings = read_finding_labels(findings_filename, images_filename,
         mri_dir, dce_dir)
-    compute_patient_statistics(patients)
+    compute_finding_statistics(findings)
+
+    for _, fid in findings.items():
+        # Convert finding score to a binary value.
+        fid['score'] = int(fid['score'])
+        if fid['score'] <= 1:
+            fid['score'] = 0
+        else:
+            fid['score'] = 1
+
+        # Convert finding position from string to coordinates.
+        finding_pos = fid['pos'].split()
+        finding_pos = [float(x) for x in finding_pos]
+
+        metadata_features = []
+
+        for fid_info in fid:
+            #print(fid_info)
+            # Process DCE images.
+            if fid_info == 'dce':
+                dce_features = extract_dce_features(
+                    fid[fid_info]['filepath'], finding_pos)
+            # Process transverse T2-weighted images and
+            # extract metadata features.
+            elif 't2_tse_tra0' in fid_info:
+                idx = fid[fid_info]['finding_idx']
+                #print('Finding at', idx)
+                #img_vol = read_mri_volume(fid[fid_info]['filepath'])
+                #print(img_vol.shape)
+
+                #fig, ax = plt.subplots()
+                #ax.imshow(img_vol[idx[1]-40:idx[1]+40,
+                #    idx[0]-40:idx[0]+40, idx[2]], cmap='gray')
+                #plt.show()
+
+                # Extract metadata features.
+                if len(metadata_features) == 0:
+                    metadata_features.extend(extract_metadata_features(
+                        fid[fid_info]['filepath']))
+
+            # Process sagittal T2-weighted images and
+            # extract metadata features.
+            elif 't2_tse_sag0' in fid_info:
+                idx = fid[fid_info]['finding_idx']
+
+                # Extract metadata features.
+                if len(metadata_features) == 0:
+                    metadata_features.extend(extract_metadata_features(
+                        fid[fid_info]['filepath']))
 
 
-    for _, patient in patients.items():
-        for _, fid in patient.items():
-            # Convert finding position from string to coordinates.
-            finding_pos = fid['pos'].split()
-            finding_pos = [float(x) for x in finding_pos]
+            elif 'ep2d_diff_tra_DYNDIST_ADC0' in fid_info:
+                idx = fid[fid_info]['finding_idx']
 
-            # fid is short for finding ID.
-            #print(patient, fid, patients[patient][fid])
-            #print(patients[patient][fid]['dce'])
-
-            if int(fid['score']) != 3:
-                continue
-            metadata_features = []
-            for fid_info in fid:
-                #print(fid_info)
-                # Process DCE images.
-                if fid_info == 'dce':
-                    #print(fid)
-                    dce_features = extract_dce_features(
-                        fid[fid_info]['filepath'], finding_pos)
-                    return
-                # Process transverse T2-weighted images and
-                # extract metadata features.
-                elif 't2_tse_tra0' in fid_info:
-                    idx = fid[fid_info]['finding_idx']
-                    #print('Finding at', idx)
-                    #img_vol = read_mri_volume(fid[fid_info]['filepath'])
-                    #print(img_vol.shape)
-
-                    #fig, ax = plt.subplots()
-                    #ax.imshow(img_vol[idx[1]-40:idx[1]+40,
-                    #    idx[0]-40:idx[0]+40, idx[2]], cmap='gray')
-                    #plt.show()
+                # Extract metadata features.
+                if len(metadata_features) == 0:
+                    metadata_features.extend(extract_metadata_features(
+                        fid[fid_info]['filepath']))
 
 
-                    # Extract metadata features.
-                    if len(metadata_features) == 0:
-                        metadata_features.extend(extract_metadata_features(
-                            fid[fid_info]['filepath']))
+            elif 'ep2d_diff_tra_DYNDISTCALC_BVAL0' in fid_info:
+                idx = fid[fid_info]['finding_idx']
 
-                # Process sagittal T2-weighted images and
-                # extract metadata features.
-                elif 't2_tse_sag0' in fid_info:
-                    idx = fid[fid_info]['finding_idx']
+                # Extract metadata features.
+                if len(metadata_features) == 0:
+                    metadata_features.extend(extract_metadata_features(
+                        fid[fid_info]['filepath']))
 
-                    # Extract metadata features.
-                    if len(metadata_features) == 0:
-                        metadata_features.extend(extract_metadata_features(
-                            fid[fid_info]['filepath']))
-
-
-                elif 'ep2d_diff_tra_DYNDIST_ADC0' in fid_info:
-                    idx = fid[fid_info]['finding_idx']
-
-                    # Extract metadata features.
-                    if len(metadata_features) == 0:
-                        metadata_features.extend(extract_metadata_features(
-                            fid[fid_info]['filepath']))
-
-
-                elif 'ep2d_diff_tra_DYNDISTCALC_BVAL0' in fid_info:
-                    idx = fid[fid_info]['finding_idx']
-
-                    # Extract metadata features.
-                    if len(metadata_features) == 0:
-                        metadata_features.extend(extract_metadata_features(
-                            fid[fid_info]['filepath']))
-
-            fid['features'] = metadata_features
-
-            print(fid['patient_name'], fid['id'], fid['features'])
+        fid['features'] = metadata_features + dce_features
+        print(fid['patient_name'], fid['id'], fid['features'])
 
 
 
