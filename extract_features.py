@@ -4,11 +4,12 @@ from os.path import join
 import numpy as np
 from scipy.stats import moment
 from skimage.filters import threshold_otsu
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 import dicom
 import SimpleITK as sitk
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+
 
 from helper import *
 
@@ -70,10 +71,10 @@ def extract_dce_features(dce_dir, finding_pos):
     '''
 
     # Histogram-based features.
-    dce_features = [np.max(roi), np.mean(roi), np.std(roi)]
+    #dce_features = [np.max(roi), np.mean(roi), np.std(roi)]
 
     # Or just use the entire ROI as a feature!
-    #dce_features = list(roi.flatten())
+    dce_features = list(roi.flatten())
 
     return dce_features
 
@@ -97,8 +98,8 @@ def extract_t2_features(mri_dir, finding_idx):
     approximate location (in image indices).
     '''
     img_vol = read_mri_volume(mri_dir)
-    roi = img_vol[finding_idx[1]-2:finding_idx[1]+3,
-        finding_idx[0]-2:finding_idx[0]+3,
+    roi = img_vol[finding_idx[0]-2:finding_idx[0]+3,
+        finding_idx[1]-2:finding_idx[1]+3,
         finding_idx[2]-1:finding_idx[2]+2]
 
     #print('Finding at', idx)
@@ -117,3 +118,22 @@ def extract_t2_features(mri_dir, finding_idx):
     t2_features = list(roi.flatten())
 
     return t2_features
+
+
+def extract_adc_features(mri_dir, finding_idx):
+    '''
+    Extract features from the provided ADC map given the finding's
+    approximate location (in image indices).
+    '''
+    img_vol = read_mri_volume(mri_dir)
+    roi = img_vol[finding_idx[0]-2:finding_idx[0]+3,
+        finding_idx[1]-2:finding_idx[1]+3,
+        finding_idx[2]-1:finding_idx[2]+2]
+
+    # Histogram-based features.
+    #adc_features = [np.max(roi), np.mean(roi), np.std(roi)]
+
+    # Or just use the entire ROI as a feature!
+    adc_features = list(roi.flatten())
+
+    return adc_features

@@ -54,8 +54,8 @@ def main():
             elif 't2_tse_tra0' in fid_info:
                 idx = fid[fid_info]['finding_idx']
 
-                t2_features = extract_t2_features(
-                    fid[fid_info]['filepath'], idx)
+                t2_features = extract_t2_features(fid[fid_info]['filepath'],
+                    idx)
 
                 # Extract metadata features.
                 if len(metadata_features) == 0:
@@ -76,6 +76,8 @@ def main():
 
             elif 'ep2d_diff_tra_DYNDIST_ADC0' in fid_info:
                 idx = fid[fid_info]['finding_idx']
+                adc_features = extract_adc_features(fid[fid_info]['filepath'],
+                    idx)
 
                 # Extract metadata features.
                 if len(metadata_features) == 0:
@@ -95,7 +97,7 @@ def main():
         zone_features = extract_zone_features(fid['zone'])
 
         fid['features'] = metadata_features + zone_features
-        fid['features'] += dce_features + t2_features
+        fid['features'] += dce_features + t2_features + adc_features
         num_features = len(fid['features'])
         #print(fid['patient_name'], fid['id'], fid['features'])
 
