@@ -3,8 +3,10 @@ from os import listdir
 from os.path import join
 
 import matplotlib.pyplot as plt
-import dicom
 import numpy as np
+from sklearn import svm
+from sklearn.model_selection import GridSearchCV
+import dicom
 
 
 def read_finding_labels(findings_filename, images_filename, mri_dir, dce_dir):
@@ -158,3 +160,22 @@ def read_mri_volume(patient_mri_dir):
     #print('The axial resolution is {} mm.'.format(axial_res))
 
     return img_vol
+
+
+def optimize_svc_params(X_train, y_train, param_grid):
+    '''
+    Optimizes hyperparameters for SVC model based on provided training data
+    using 10-fold cross validation.
+    Only looks at the parameters given in 'param_grid'.
+    '''
+    clf = GridSearchCV(svm.SVC(class_weight='balanced'), param_grid, cv=10)
+    clf.fit(X_train, y_train)
+    print("Optimal params:")
+    print(clf.best_params_)
+
+    means = clf.cv_results_['mean_test_score']
+    stds = clf.cv_results_['std_test_score']
+    for mean, std, params in zip(means, stds, clf.cv_results_['params']):
+        print("%0.3f (+/-%0.04f) for %r"  % (mean, std, params))
+
+    return clf.best_params_

@@ -132,12 +132,12 @@ def main():
                   {'kernel': ['rbf'], 'gamma': gamma_search,
                    'C': C_search}]
 
-    #print('Estimating best hyperparameters...')
-    #best_params = optimize_svc_params(X_train, y_train, param_grid)
-    #svc = svm.SVC(**best_params, probability=True)
+    print('Estimating best hyperparameters...')
+    best_params = optimize_svc_params(X_train, y_train, param_grid)
+    svc = svm.SVC(**best_params, class_weight='balanced', probability=True)
 
-    svc = svm.SVC(kernel='rbf', C=500, gamma=0.0001, class_weight='balanced',
-        probability=True)
+    #svc = svm.SVC(kernel='rbf', C=500, gamma=0.0001, class_weight='balanced',
+    #    probability=True)
 
     svc.fit(X_train, y_train)
     y_predicted = svc.predict(X_test)
