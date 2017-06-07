@@ -33,12 +33,10 @@ def extract_dce_features(dce_dir, finding_pos):
     Extract features from the provided DCE image volume given the finding's
     approximate location (in image coordinates).
     '''
-    # Get header and image volume file names.
+    # Get header file name.
     for f in listdir(dce_dir):
         if f.endswith('mhd'):
             header_file = f
-        else:
-            img_file = f
 
     # Read image volume and swap the dimensions around such that the first two
     # dimensions are the transverse directions and the last one is axial.
@@ -48,14 +46,13 @@ def extract_dce_features(dce_dir, finding_pos):
 
     # Convert finding coordinates to image volume indices.
     idx_finding = img_itk.TransformPhysicalPointToIndex(finding_pos)
-    #print(idx_finding)
 
     roi = img[idx_finding[1]-2:idx_finding[1]+3,
               idx_finding[0]-2:idx_finding[0]+3,
               idx_finding[2]-1:idx_finding[2]+2]
 
-    # Add ROI dashed rectangle around the finding.
     '''
+    # Add ROI dashed rectangle around the finding.
     roi_size = 14
     finding_roi = patches.Rectangle(
         (idx_finding[1]-roi_size/2, idx_finding[0]-roi_size/2),
@@ -94,10 +91,10 @@ def extract_zone_features(zone):
 
 
 
-def extract_t2_features(mri_dir, finding_pos):
+def extract_t2_features(mri_dir, finding_idx):
     '''
     Extract features from the provided DCE image volume given the finding's
-    approximate location (in image coordinates).
+    approximate location (in image indices).
     '''
     #print('Finding at', idx)
     #img_vol = read_mri_volume(fid[fid_info]['filepath'])
