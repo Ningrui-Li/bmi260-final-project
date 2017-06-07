@@ -2,11 +2,14 @@ from os import listdir
 from os.path import join
 
 import numpy as np
+from scipy.stats import moment
+from skimage.filters import threshold_otsu
 
 import dicom
 import SimpleITK as sitk
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+
 
 def extract_metadata_features(mri_dir):
     '''
@@ -45,9 +48,14 @@ def extract_dce_features(dce_dir, finding_pos):
 
     # Convert finding coordinates to image volume indices.
     idx_finding = img_itk.TransformPhysicalPointToIndex(finding_pos)
-    print(idx_finding)
+    #print(idx_finding)
+
+    roi = img[idx_finding[1]-2:idx_finding[1]+3,
+              idx_finding[0]-2:idx_finding[0]+3,
+              idx_finding[2]-1:idx_finding[2]+2]
 
     # Add ROI dashed rectangle around the finding.
+    '''
     roi_size = 14
     finding_roi = patches.Rectangle(
         (idx_finding[1]-roi_size/2, idx_finding[0]-roi_size/2),
@@ -56,6 +64,13 @@ def extract_dce_features(dce_dir, finding_pos):
     fig, ax = plt.subplots()
     ax.imshow(img[:, :, idx_finding[2]], cmap='gray')
     ax.add_patch(finding_roi)
-    ax.add_patch(finding_roi)
+
+    fig, ax = plt.subplots()
+    ax.hist(roi.flatten(), 40)
+    ax.set_xlim(0, 40)
     plt.show()
-    return
+    '''
+
+    dce_features = [np.max(roi), np.mean(roi), np.std(roi)]
+
+    return dce_features
