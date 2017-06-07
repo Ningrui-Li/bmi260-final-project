@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import dicom
 import numpy as np
 
+from sklearn import preprocessing, metrics, svm
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.feature_selection import SelectKBest, f_classif
+
 from extract_features import extract_metadata_features, extract_dce_features
 
 def read_finding_labels(findings_filename, images_filename, mri_dir, dce_dir):
@@ -85,8 +89,6 @@ def read_finding_labels(findings_filename, images_filename, mri_dir, dce_dir):
             findings[finding_name]['dce']['filepath'] = join(
                 get_dce_dir(dce_dir, patient_name))
 
-            print(findings[finding_name])
-
     return findings
 
 
@@ -165,10 +167,9 @@ def read_mri_volume(patient_mri_dir):
 
 def compute_finding_statistics(findings):
     finding_grades = [0, 0, 0, 0, 0]
-    print(findings)
     for _, finding in findings.items():
         finding_grades[int(finding['score'])-1] += 1
-    #print(finding_grades)
+    print(finding_grades)
     return
 
 
@@ -193,6 +194,7 @@ def main():
             fid['score'] = 0
         else:
             fid['score'] = 1
+        
 
         # Convert finding position from string to coordinates.
         finding_pos = fid['pos'].split()
@@ -253,7 +255,59 @@ def main():
                         fid[fid_info]['filepath']))
 
         fid['features'] = metadata_features + dce_features
-        print(fid['patient_name'], fid['id'], fid['features'])
+        num_features = len(fid['features'])
+        #print(fid['patient_name'], fid['id'], fid['features'])
+
+
+    ## Predict whether or not lesions are malignant.
+    findings_list = list(findings.keys())
+
+    X = np.zeros((len(findings), num_features))
+    y = np.zeros(len(findings))
+
+    for i, finding in enumerate(findings_list):
+        X[i, :] = findings[finding]['features']
+        y[i] = findings[finding]['score']
+
+
+    # Normalize all feature vectors, split into training and test data.
+    X = preprocessing.normalize(X, norm='l2')
+
+    ## Feature selection.
+    selector = SelectKBest(f_classif, k='all')
+    X_transform = selector.fit_transform(X, y)
+
+    X_train, X_test, y_train, y_test = train_test_split(X_transform, y,
+        test_size=0.2)
+
+
+    # Optimize hyperparameters using 10-fold cross-validation.
+    C_search = [1, 5, 10, 50, 100, 500, 1000]
+    gamma_search = [1e-2, 1e-3, 1e-4, 1e-5]
+    degree_search = [2, 3, 4, 5]
+    param_grid = [{'kernel': ['linear'], 'C': C_search},
+                  {'kernel': ['poly'], 'gamma': gamma_search,
+                   'degree': degree_search, 'C': C_search},
+                  {'kernel': ['rbf'], 'gamma': gamma_search,
+                   'C': C_search}]
+
+    #print('Estimating best hyperparameters...')
+    #best_params = optimize_svc_params(X_train, y_train, param_grid)
+    #svc = svm.SVC(**best_params, probability=True)
+
+    svc = svm.SVC(kernel='rbf', C=500, gamma=0.0001, class_weight='balanced',
+        probability=True)
+
+    svc.fit(X_train, y_train)
+    y_predicted = svc.predict(X_test)
+
+    true_positives = np.sum((y_predicted == y_test) & (y_test == 1))
+    true_negatives = np.sum((y_predicted == y_test) & (y_test == 0))
+    positives = np.sum(y_test == 1)
+    negatives = np.sum(y_test == 0)
+    print('Accuracy = {:.2f}%'.format(100*np.mean(y_predicted == y_test)))
+    print('Sensitivity = {:.2f}%'.format(100*true_positives/positives))
+    print('Specificity = {:.2f}%'.format(100*true_negatives/negatives))
 
 
 
