@@ -1,3 +1,6 @@
+Proposal
+========
+
 Darvin’s Comments:
 Your project is incredibly well defined.
 You have a clear goal and clear approaches that follow the structure of this class well, so no real comments there.
@@ -12,3 +15,8 @@ David’s Comments:
 If you’re using T2w, DCE and DWI together, will you use registration?  This will be covered in an upcoming lecture.  It can be a fairly challenging topic in and of itself.  If the dataset comes with pre-registered images, that will be an asset.
 Consider variability in the MR image values across patients carefully.  It be difficult to compare if they aren’t using the exact same MR pulse sequence on the exact same manufacturer’s scanner
 Are you going to compute kinetics from the DCE data?  This is a pretty big topic in and of itself.  If not, you should consider carefully what the meaning of that DCE data is since it will depend on things like the bolus injection timing and the physiological differences between subjects (not having to do with prostate).
+
+Milestone Report
+================
+Albee's Comments:
+very interesting research question, clearly defined methods, would like a bit more discussion on how you evaluate your final results in your final report
