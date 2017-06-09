@@ -13,21 +13,24 @@ import SimpleITK as sitk
 
 from helper import *
 
-def extract_metadata_features(mri_dir):
+def extract_metadata_features(finding):
     '''
     Given a directory with MR image slices (DICOM), look at the first DICOM
     file and extract various metadata features from the patient, like his age.
     '''
-    dcm_names = listdir(mri_dir)
-    num_images = len(dcm_names)
+    # Loop through all image volumes and read their DICOM files for info about
+    # the patient's age and weight.
+    for _, item in finding.items():
+        if type(item) is dict:
+            mri_dir = item['filepath']
+            dcm_names = listdir(mri_dir)
+            num_images = len(dcm_names)
 
-    # Read in first image to get image size info.
-    dcm = dicom.read_file(join(mri_dir, dcm_names[0]))
+            # Read in first image to get patient's age and weight.
+            dcm = dicom.read_file(join(mri_dir, dcm_names[0]))
+            features = [int(dcm.PatientAge[:-1]), int(dcm.PatientWeight)]
 
-    # Add patient's age, size, and weight.
-    features = [int(dcm.PatientAge[:-1]), int(dcm.PatientWeight)]
-
-    return features
+            return features
 
 
 def extract_dce_features(dce_dir, finding_pos):
@@ -106,10 +109,13 @@ def extract_t2_features(mri_dir, finding_idx):
     #
     #print(img_vol.shape)
 
-    #fig, ax = plt.subplots()
-    #ax.imshow(img_vol[idx[1]-40:idx[1]+40,
-    #    idx[0]-40:idx[0]+40, idx[2]], cmap='gray')
-    #plt.show()
+    '''
+    fig, ax = plt.subplots()
+    ax.imshow(img_vol[finding_idx[1]-40:finding_idx[1]+40,
+        finding_idx[0]-40:finding_idx[0]+40, finding_idx[2]], cmap='gray')
+    ax.set_title(mri_dir)
+    plt.show()
+    '''
 
     # Histogram-based features.
     #t2_features = [np.max(roi), np.mean(roi), np.std(roi)]

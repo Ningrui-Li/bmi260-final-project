@@ -5,6 +5,7 @@ from sklearn.feature_selection import SelectKBest, f_classif
 from extract_features import *
 from helper import *
 
+
 def compute_finding_statistics(findings):
     finding_grades = [0, 0, 0, 0, 0]
     for _, finding in findings.items():
@@ -19,83 +20,65 @@ def main():
     findings_filename = 'ProstateX-2-Findings-Train.csv'
     images_filename = 'ProstateX-2-Images-Train.csv'
 
-    #print(listdir(get_mri_dir(mri_dir, 'ProstateX-0014')))
-    #print(listdir(get_dce_dir(dce_dir, 'ProstateX-0014')))
-    #return
-
+    print('Reading labels...')
     findings = read_finding_labels(findings_filename, images_filename,
         mri_dir, dce_dir)
     compute_finding_statistics(findings)
+    print()
 
+    print('Computing features...')
     for _, fid in findings.items():
         # Convert finding score to a binary value.
         fid['score'] = int(fid['score'])
-        if fid['score'] <= 1:
+
+        # Gleason grade groups 1 and 2 are considered "benign".
+        if fid['score'] <= 2:
             fid['score'] = 0
         else:
             fid['score'] = 1
 
+        # Extract patient metadata features.
+        metadata_features = extract_metadata_features(fid)
 
         # Convert finding position from string to coordinates.
+        # Extract features from Ktrans images.
         finding_pos = fid['pos'].split()
         finding_pos = [float(x) for x in finding_pos]
+        dce_features = extract_dce_features(
+            fid['dce']['filepath'], finding_pos)
 
-        metadata_features = []
+        # Extract features from transverse T2-weighted images.
+        if 't2_tse_tra_Grappa30' in fid:
+            t2_tra_name = 't2_tse_tra_Grappa30'
+        else:
+            t2_tra_name = 't2_tse_tra0'
 
-        for fid_info in fid:
-            #print(fid_info)
-            # Process DCE images.
-            if fid_info == 'dce':
-                dce_features = extract_dce_features(
-                    fid[fid_info]['filepath'], finding_pos)
+        idx = fid[t2_tra_name]['finding_idx']
+        t2_features = extract_t2_features(fid[t2_tra_name]['filepath'], idx)
 
+        # TODO: Extract features from sagittal T2-weighted images.
+        # 't2_tse_sag0'
 
-            # Process transverse T2-weighted images.
-            elif 't2_tse_tra0' in fid_info:
-                idx = fid[fid_info]['finding_idx']
+        # Extract features from ADC images.
+        if 'ep2d_diff_tra_DYNDIST_ADC0' in fid:
+            adc_name = 'ep2d_diff_tra_DYNDIST_ADC0'
+        elif 'ep2d_diff_tra_DYNDIST_MIX_ADC0' in fid:
+            adc_name = 'ep2d_diff_tra_DYNDIST_MIX_ADC0'
+        elif 'ep2d_diff_tra2x2_Noise0_FS_DYNDIST_ADC0' in fid:
+            adc_name = 'ep2d_diff_tra2x2_Noise0_FS_DYNDIST_ADC0'
+        else:
+            adc_name = 'diffusie_3Scan_4bval_fs_ADC0'
 
-                t2_features = extract_t2_features(fid[fid_info]['filepath'],
-                    idx)
+        idx = fid[adc_name]['finding_idx']
+        adc_features = extract_adc_features(fid[adc_name]['filepath'], idx)
 
-                # Extract metadata features.
-                if len(metadata_features) == 0:
-                    metadata_features.extend(extract_metadata_features(
-                        fid[fid_info]['filepath']))
-
-
-            # Process sagittal T2-weighted images and
-            # extract metadata features.
-            elif 't2_tse_sag0' in fid_info:
-                idx = fid[fid_info]['finding_idx']
-
-                # Extract metadata features.
-                if len(metadata_features) == 0:
-                    metadata_features.extend(extract_metadata_features(
-                        fid[fid_info]['filepath']))
-
-
-            elif 'ep2d_diff_tra_DYNDIST_ADC0' in fid_info:
-                idx = fid[fid_info]['finding_idx']
-                adc_features = extract_adc_features(fid[fid_info]['filepath'],
-                    idx)
-
-                # Extract metadata features.
-                if len(metadata_features) == 0:
-                    metadata_features.extend(extract_metadata_features(
-                        fid[fid_info]['filepath']))
-
-
-            elif 'ep2d_diff_tra_DYNDISTCALC_BVAL0' in fid_info:
-                idx = fid[fid_info]['finding_idx']
-
-                # Extract metadata features.
-                if len(metadata_features) == 0:
-                    metadata_features.extend(extract_metadata_features(
-                        fid[fid_info]['filepath']))
+        # TODO: Extract features from b-value images.
+        #  'ep2d_diff_tra_DYNDISTCALC_BVAL0'
 
         # Extract zone location as a feature.
         zone_features = extract_zone_features(fid['zone'])
 
+        # Combine all features into a single vector.
         fid['features'] = metadata_features + zone_features
         fid['features'] += dce_features + t2_features + adc_features
         num_features = len(fid['features'])
