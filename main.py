@@ -4,7 +4,7 @@ from sklearn.feature_selection import SelectKBest, f_classif
 
 from extract_features import *
 from helper import *
-
+from analysis import *
 
 def compute_finding_statistics(findings):
     finding_grades = [0, 0, 0, 0, 0]
@@ -15,27 +15,38 @@ def compute_finding_statistics(findings):
 
 
 def main():
+    # Set input parameters.
+    multiclass = True
     mri_dir = 'DOI'
     dce_dir = 'KtransTrain'
     findings_filename = 'ProstateX-2-Findings-Train.csv'
     images_filename = 'ProstateX-2-Images-Train.csv'
 
+    # Read in image information + labels.
     print('Reading labels...')
     findings = read_finding_labels(findings_filename, images_filename,
         mri_dir, dce_dir)
     compute_finding_statistics(findings)
     print()
 
+    # Feature analysis.
+    print('Analyzing metadata features.')
+    analyze_metadata_features(findings)
+    return
+
+    # Compute all features.
     print('Computing features...')
     for _, fid in findings.items():
         # Convert finding score to a binary value.
         fid['score'] = int(fid['score'])
 
-        # Gleason grade groups 1 and 2 are considered "benign".
-        if fid['score'] <= 2:
-            fid['score'] = 0
-        else:
-            fid['score'] = 1
+        # Gleason grade groups 1 and 2 are considered "benign" if doing
+        # binary classification.
+        if not multiclass:
+            if fid['score'] <= 2:
+                fid['score'] = 0
+            else:
+                fid['score'] = 1
 
         # Extract patient metadata features.
         metadata_features = extract_metadata_features(fid)
@@ -95,6 +106,7 @@ def main():
         X[i, :] = findings[finding]['features']
         y[i] = findings[finding]['score']
 
+    print('Total number of features: ', num_features)
 
     # Normalize all feature vectors, split into training and test data.
     X = preprocessing.normalize(X, norm='l2')
@@ -104,8 +116,7 @@ def main():
     X_transform = selector.fit_transform(X, y)
 
     X_train, X_test, y_train, y_test = train_test_split(X_transform, y,
-        test_size=0.2)
-
+        test_size=0.3)
 
     # Optimize hyperparameters using 10-fold cross-validation.
     C_search = [1, 5, 10, 50, 100, 500, 1000]
