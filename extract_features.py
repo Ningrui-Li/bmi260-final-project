@@ -6,6 +6,7 @@ from scipy.stats import moment
 from skimage.filters import threshold_otsu
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+import mahotas
 
 import dicom
 import SimpleITK as sitk
@@ -111,8 +112,8 @@ def extract_t2_features(mri_dir, finding_idx):
 
     # Slice index actually indexes in reverse.
     slice_index = img_vol.shape[2]-finding_idx[2]-1
-    roi = img_vol[finding_idx[1]-2:finding_idx[1]+3,
-        finding_idx[0]-2:finding_idx[0]+3,
+    roi = img_vol[finding_idx[1]-15:finding_idx[1]+15,
+        finding_idx[0]-15:finding_idx[0]+15,
         slice_index-1:slice_index+2]
 
     '''
@@ -127,10 +128,16 @@ def extract_t2_features(mri_dir, finding_idx):
     '''
 
     # Histogram-based features.
-    t2_features = [np.max(roi), np.mean(roi), np.std(roi)]
+    histogram_features = [np.max(roi), np.mean(roi), np.std(roi)]
+
+    # Compute texture features.
+    texture_features = list(mahotas.features.haralick(roi,
+        compute_14th_feature=False).flatten())
 
     # Or just use the entire ROI as a feature!
     #t2_features = list(roi.flatten())
+
+    t2_features = histogram_features + texture_features
 
     return t2_features
 
