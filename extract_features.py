@@ -80,14 +80,15 @@ def extract_dce_features(dce_dir, finding_pos):
     '''
 
     # Histogram-based features.
-    dce_features = [np.max(roi), np.mean(roi), np.median(roi), np.std(roi),
-                    np.max(img), np.mean(img), np.median(img), np.std(img),
-                    img[finding_idx[1], finding_idx[0], slice_index]]
+    histogram_features = [np.max(roi), np.mean(roi), np.median(roi),
+                          np.std(roi), np.max(img), np.mean(img),
+                          np.median(img), np.std(img),
+                          img[finding_idx[1], finding_idx[0], slice_index]]
 
     # Or just use the entire ROI as a feature!
     #dce_features = list(roi.flatten())
 
-    return dce_features
+    return histogram_features
 
 
 def extract_zone_features(zone):
@@ -128,7 +129,8 @@ def extract_t2_features(mri_dir, finding_idx):
     '''
 
     # Histogram-based features.
-    histogram_features = [np.max(roi), np.mean(roi), np.std(roi)]
+    histogram_features = [np.max(roi), np.mean(roi),
+        np.median(roi), np.std(roi)]
 
     # Compute texture features.
     texture_features = list(mahotas.features.haralick(roi,
@@ -149,14 +151,11 @@ def extract_adc_features(mri_dir, finding_idx):
     '''
     img_vol = read_mri_volume(mri_dir)
 
-    #slice_index = finding_idx[2]
-    slice_index = img_vol.shape[2]-finding_idx[2]-1
-    #x_index = img_vol.shape[0]-finding_idx[1]-1
-    #y_index = img_vol.shape[1]-finding_idx[0]-1
     x_index = finding_idx[1]
     y_index = finding_idx[0]
-    roi = img_vol[finding_idx[1]-2:finding_idx[1]+3,
-        finding_idx[0]-2:finding_idx[0]+3,
+    slice_index = img_vol.shape[2]-finding_idx[2]-1
+
+    roi = img_vol[x_index-2:x_index+3, y_index-2:y_index+3,
         slice_index-1:slice_index+2]
 
     # Show ROI for debugging.
@@ -171,9 +170,16 @@ def extract_adc_features(mri_dir, finding_idx):
     '''
 
     # Histogram-based features.
-    adc_features = [np.max(roi), np.mean(roi), np.std(roi)]
+    histogram_features = [np.max(roi), np.mean(roi),
+        np.median(roi), np.std(roi)]
+
+    # Compute texture features.
+    texture_features = list(mahotas.features.haralick(roi,
+        compute_14th_feature=False).flatten())
 
     # Or just use the entire ROI as a feature!
-    #adc_features = list(roi.flatten())
+    adc_features = list(roi.flatten())
 
+    adc_features = histogram_features + texture_features
+    
     return adc_features
