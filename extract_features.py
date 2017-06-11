@@ -54,9 +54,14 @@ def extract_dce_features(dce_dir, finding_pos):
     x_index = finding_idx[1]
     y_index = finding_idx[0]
     slice_index = img.shape[2]-finding_idx[2]-1
-    
+
+    '''
     roi = img[x_index-4:x_index+4,
               y_index-4:y_index+4,
+              slice_index-1:slice_index+2]
+    '''
+    roi = img[x_index-2:x_index+3,
+              y_index-2:y_index+3,
               slice_index-1:slice_index+2]
 
     '''
@@ -136,14 +141,32 @@ def extract_adc_features(mri_dir, finding_idx):
     approximate location (in image indices).
     '''
     img_vol = read_mri_volume(mri_dir)
-    roi = img_vol[finding_idx[0]-2:finding_idx[0]+3,
-        finding_idx[1]-2:finding_idx[1]+3,
-        finding_idx[2]-1:finding_idx[2]+2]
+
+    #slice_index = finding_idx[2]
+    slice_index = img_vol.shape[2]-finding_idx[2]-1
+    #x_index = img_vol.shape[0]-finding_idx[1]-1
+    #y_index = img_vol.shape[1]-finding_idx[0]-1
+    x_index = finding_idx[1]
+    y_index = finding_idx[0]
+    roi = img_vol[finding_idx[1]-2:finding_idx[1]+3,
+        finding_idx[0]-2:finding_idx[0]+3,
+        slice_index-1:slice_index+2]
+
+    # Show ROI for debugging.
+    '''
+    print(img_vol.shape, finding_idx)
+    fig, ax = plt.subplots()
+    ax.imshow(img_vol[x_index-20:x_index+20,
+        y_index-20:y_index+20, slice_index], cmap='gray')
+    ax.set_title('ADC ROI')
+    plt.tight_layout()
+    plt.show()
+    '''
 
     # Histogram-based features.
-    #adc_features = [np.max(roi), np.mean(roi), np.std(roi)]
+    adc_features = [np.max(roi), np.mean(roi), np.std(roi)]
 
     # Or just use the entire ROI as a feature!
-    adc_features = list(roi.flatten())
+    #adc_features = list(roi.flatten())
 
     return adc_features

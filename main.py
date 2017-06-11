@@ -16,7 +16,7 @@ def compute_finding_statistics(findings):
 
 def main():
     # Set input parameters.
-    multiclass = True
+    multiclass = False
     mri_dir = 'DOI'
     dce_dir = 'KtransTrain'
     findings_filename = 'ProstateX-2-Findings-Train.csv'
@@ -30,14 +30,15 @@ def main():
     print()
 
     # Feature analysis.
-    print('Analyzing metadata features.')
+    #print('Analyzing features...')
     #analyze_metadata_features(findings)
-    analyze_histogram_features(findings)
-    return
+    #analyze_histogram_features(findings)
+    #return
 
     # Compute all features.
     print('Computing features...')
     for _, fid in findings.items():
+        print('Patient {}, finding {}'.format(fid['patient_name'], fid['id']))
         # Convert finding score to a binary value.
         fid['score'] = int(fid['score'])
 
@@ -50,7 +51,7 @@ def main():
                 fid['score'] = 1
 
         # Extract patient metadata features.
-        metadata_features = extract_metadata_features(fid)
+        #metadata_features = extract_metadata_features(fid)
 
         # Convert finding position from string to coordinates.
         # Extract features from Ktrans images.
@@ -90,8 +91,11 @@ def main():
         zone_features = extract_zone_features(fid['zone'])
 
         # Combine all features into a single vector.
-        fid['features'] = metadata_features + zone_features
-        fid['features'] += dce_features + t2_features + adc_features
+        #fid['features'] = metadata_features
+        #fid['features'] += zone_features
+        fid['features'] = dce_features
+        fid['features'] += t2_features
+        fid['features'] += adc_features
         num_features = len(fid['features'])
         #print(fid['patient_name'], fid['id'], fid['features'])
 
