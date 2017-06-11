@@ -31,7 +31,8 @@ def main():
 
     # Feature analysis.
     print('Analyzing metadata features.')
-    analyze_metadata_features(findings)
+    #analyze_metadata_features(findings)
+    analyze_histogram_features(findings)
     return
 
     # Compute all features.
@@ -53,10 +54,9 @@ def main():
 
         # Convert finding position from string to coordinates.
         # Extract features from Ktrans images.
-        finding_pos = fid['pos'].split()
-        finding_pos = [float(x) for x in finding_pos]
         dce_features = extract_dce_features(
-            fid['dce']['filepath'], finding_pos)
+            fid['dce']['filepath'], fid['pos'])
+        dce_features = dce_features[:4] # keep only ROI features.
 
         # Extract features from transverse T2-weighted images.
         if 't2_tse_tra_Grappa30' in fid:
