@@ -50,33 +50,33 @@ def extract_dce_features(dce_dir, finding_pos):
     img = np.transpose(img, (2, 1, 0))
 
     # Convert finding coordinates to image volume indices.
-    idx_finding = img_itk.TransformPhysicalPointToIndex(finding_pos)
-
-    roi = img[idx_finding[1]-4:idx_finding[1]+4,
-              idx_finding[0]-4:idx_finding[0]+4,
-              idx_finding[2]-1:idx_finding[2]+2]
+    finding_idx = img_itk.TransformPhysicalPointToIndex(finding_pos)
+    x_index = finding_idx[1]
+    y_index = finding_idx[0]
+    slice_index = img.shape[2]-finding_idx[2]-1
+    
+    roi = img[x_index-4:x_index+4,
+              y_index-4:y_index+4,
+              slice_index-1:slice_index+2]
 
     '''
     # Add ROI dashed rectangle around the finding.
     roi_size = 14
     finding_roi = patches.Rectangle(
-        (idx_finding[1]-roi_size/2, idx_finding[0]-roi_size/2),
+        (x_index-roi_size/2, y_index-roi_size/2),
         roi_size, roi_size, fill=False, color='b', linewidth=2,
         linestyle='dashed')
     fig, ax = plt.subplots()
-    ax.imshow(img[:, :, idx_finding[2]], cmap='gray')
+    ax.imshow(img[:, :, slice_index], cmap='gray')
     ax.add_patch(finding_roi)
 
-    fig, ax = plt.subplots()
-    ax.hist(roi.flatten(), 40)
-    ax.set_xlim(0, 40)
     plt.show()
     '''
 
     # Histogram-based features.
     dce_features = [np.max(roi), np.mean(roi), np.median(roi), np.std(roi),
                     np.max(img), np.mean(img), np.median(img), np.std(img),
-                    img[idx_finding[1], idx_finding[0], idx_finding[2]]]
+                    img[finding_idx[1], finding_idx[0], slice_index]]
 
     # Or just use the entire ROI as a feature!
     #dce_features = list(roi.flatten())
