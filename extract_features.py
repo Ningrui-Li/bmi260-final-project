@@ -103,27 +103,29 @@ def extract_t2_features(mri_dir, finding_idx):
     approximate location (in image indices).
     '''
     img_vol = read_mri_volume(mri_dir)
-    roi = img_vol[finding_idx[0]-2:finding_idx[0]+3,
-        finding_idx[1]-2:finding_idx[1]+3,
-        finding_idx[2]-1:finding_idx[2]+2]
 
-    #print('Finding at', idx)
-    #
-    #print(img_vol.shape)
+    # Slice index actually indexes in reverse.
+    slice_index = img_vol.shape[2]-finding_idx[2]-1
+    roi = img_vol[finding_idx[1]-2:finding_idx[1]+3,
+        finding_idx[0]-2:finding_idx[0]+3,
+        slice_index-1:slice_index+2]
 
     '''
+    # Show ROI for debugging.
+    print(img_vol.shape, finding_idx)
     fig, ax = plt.subplots()
-    ax.imshow(img_vol[finding_idx[1]-40:finding_idx[1]+40,
-        finding_idx[0]-40:finding_idx[0]+40, finding_idx[2]], cmap='gray')
-    ax.set_title(mri_dir)
+    ax.imshow(img_vol[finding_idx[1]-100:finding_idx[1]+100,
+        finding_idx[0]-100:finding_idx[0]+100, slice_index, cmap='gray')
+    ax.set_title('T2 ROI')
+    plt.tight_layout()
     plt.show()
     '''
 
     # Histogram-based features.
-    #t2_features = [np.max(roi), np.mean(roi), np.std(roi)]
+    t2_features = [np.max(roi), np.mean(roi), np.std(roi)]
 
     # Or just use the entire ROI as a feature!
-    t2_features = list(roi.flatten())
+    #t2_features = list(roi.flatten())
 
     return t2_features
 
