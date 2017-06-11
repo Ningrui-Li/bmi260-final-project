@@ -52,8 +52,8 @@ def extract_dce_features(dce_dir, finding_pos):
     # Convert finding coordinates to image volume indices.
     idx_finding = img_itk.TransformPhysicalPointToIndex(finding_pos)
 
-    roi = img[idx_finding[1]-2:idx_finding[1]+3,
-              idx_finding[0]-2:idx_finding[0]+3,
+    roi = img[idx_finding[1]-4:idx_finding[1]+4,
+              idx_finding[0]-4:idx_finding[0]+4,
               idx_finding[2]-1:idx_finding[2]+2]
 
     '''
@@ -74,10 +74,12 @@ def extract_dce_features(dce_dir, finding_pos):
     '''
 
     # Histogram-based features.
-    #dce_features = [np.max(roi), np.mean(roi), np.std(roi)]
+    dce_features = [np.max(roi), np.mean(roi), np.median(roi), np.std(roi),
+                    np.max(img), np.mean(img), np.median(img), np.std(img),
+                    img[idx_finding[1], idx_finding[0], idx_finding[2]]]
 
     # Or just use the entire ROI as a feature!
-    dce_features = list(roi.flatten())
+    #dce_features = list(roi.flatten())
 
     return dce_features
 
