@@ -38,9 +38,14 @@ def read_finding_labels(findings_filename, images_filename, mri_dir, dce_dir):
             finding = dict()
             finding['patient_name'] = line[0]
             finding['id'] = int(line[1])
+
             finding['pos'] = line[2]
+            finding['pos'] = finding['pos'].split()
+            finding['pos'] = [float(x) for x in finding['pos']]
+
             finding['zone'] = line[3]
             finding['score'] = int(line[4])
+
 
             # Set finding name to be the patient name followed by the
             # finding number.
